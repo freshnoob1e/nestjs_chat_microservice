@@ -1,0 +1,55 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Chatroom {
+  id           Int      @id @default(autoincrement())
+  date_created DateTime @default(now())
+  date_updated DateTime @updatedAt
+
+  messages  Message[]
+  chatrooms ChatroomOnUser[]
+  @@map("chats")
+}
+
+model Message {
+  id           Int      @id @default(autoincrement())
+  date_created DateTime @default(now())
+  date_updated DateTime @updatedAt
+
+  text String
+
+  user_id     Int
+  user        User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  chatroom_id Int
+  chatroom    Chatroom @relation(fields: [chatroom_id], references: [id], onDelete: Cascade)
+  @@map("messages")
+}
+
+model User {
+  id   Int    @id @default(autoincrement())
+  uid  Int
+  name String
+
+  chatrooms ChatroomOnUser[]
+  messages  Message[]
+  @@map("users")
+}
+
+model ChatroomOnUser {
+  chatroom    Chatroom @relation(fields: [chatroom_id], references: [id], onDelete: Cascade)
+  chatroom_id Int
+  user        User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user_id     Int
+  assigned_at DateTime @default(now())
+
+  @@id([chatroom_id, user_id])
+}
