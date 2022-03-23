@@ -15,8 +15,8 @@ model Chatroom {
   date_created DateTime @default(now())
   date_updated DateTime @updatedAt
 
-  messages  Message[]
-  chatrooms ChatroomOnUser[]
+  messages Message[]
+  users    User[]
   @@map("chats")
 }
 
@@ -36,20 +36,10 @@ model Message {
 
 model User {
   id   Int    @id @default(autoincrement())
-  uid  Int
+  uid  String @unique
   name String
 
-  chatrooms ChatroomOnUser[]
   messages  Message[]
+  chatrooms Chatroom[]
   @@map("users")
-}
-
-model ChatroomOnUser {
-  chatroom    Chatroom @relation(fields: [chatroom_id], references: [id], onDelete: Cascade)
-  chatroom_id Int
-  user        User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  user_id     Int
-  assigned_at DateTime @default(now())
-
-  @@id([chatroom_id, user_id])
 }
