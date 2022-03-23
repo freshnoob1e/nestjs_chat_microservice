@@ -13,39 +13,30 @@ export class ChatroomService {
   ) {}
 
   async create(createChatroomDto: CreateChatroomDto) {
+    if (createChatroomDto.uid_main === createChatroomDto.uid_target) {
+      throw new HttpException(
+        'Invalid uid (Cannot be same user)',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
     // Check if user exixst
-    let user_main = await this.prisma.user.findUnique({
-      where: {
-        uid: createChatroomDto.uid_main,
-      },
-    });
-    if (!user_main) {
-      const userDto: UserDto = {
-        uid: createChatroomDto.uid_main,
-        name: createChatroomDto.name_main,
-      };
-      user_main = await this.prisma.user.create({
-        data: userDto,
-      });
-    }
+    const userDto: UserDto = {
+      uid: createChatroomDto.uid_main,
+      name: createChatroomDto.name_main,
+    };
+    const user_main = await this.userService.getUserOrCreateNew(userDto);
 
-    let user_target = await this.prisma.user.findUnique({
-      where: {
-        uid: createChatroomDto.uid_target,
-      },
-    });
-    if (!user_target) {
-      const userDto: UserDto = {
-        uid: createChatroomDto.uid_target,
-        name: createChatroomDto.name_target,
-      };
-      user_target = await this.prisma.user.create({
-        data: userDto,
-      });
-    }
+    const targetUserDto: UserDto = {
+      uid: createChatroomDto.uid_target,
+      name: createChatroomDto.name_target,
+    };
+    const user_target = await this.userService.getUserOrCreateNew(
+      targetUserDto,
+    );
 
-    // check if already exists
-    const getUsersAndRooms = await this.prisma.user.findMany({
+    // check if room already exists
+    const getUsersAndRooms = await this.prisma.user.findUnique({
       where: {
         uid: user_main.uid,
       },
@@ -53,62 +44,81 @@ export class ChatroomService {
         chatrooms: {
           include: {
             users: true,
+            messages: true,
           },
         },
       },
     });
 
-    let chatrooms = getUsersAndRooms[0].chatrooms;
-    let roomExists = false;
-    let returnRoom = null;
+    let chatrooms = getUsersAndRooms.chatrooms;
     for (const room in chatrooms) {
       let users = chatrooms[room].users;
 
       for (const user in users) {
         if (users[user].id === user_target.id) {
-          roomExists = true;
           return chatrooms[room];
         }
       }
     }
 
-    if (!roomExists) {
-      // create chatroom
-      returnRoom = await this.prisma.chatroom.create({
-        data: {
-          users: {
-            connect: [
-              {
-                id: user_main.id,
-              },
-              {
-                id: user_target.id,
-              },
-            ],
+    // create chatroom if not exists
+    const returnRoom = await this.prisma.chatroom.create({
+      data: {
+        users: {
+          connect: [
+            {
+              id: user_main.id,
+            },
+            {
+              id: user_target.id,
+            },
+          ],
+        },
+      },
+      include: {
+        users: true,
+        messages: true,
+      },
+    });
+    return returnRoom;
+  }
+
+  async getChatroom(uid: string, target_uid: string) {
+    if (uid === target_uid) {
+      throw new HttpException('Invalid target uid', HttpStatus.BAD_REQUEST);
+    }
+
+    const user = await this.userService.getUser(uid);
+
+    const userRooms = user.chatrooms;
+
+    for (const room in userRooms) {
+      const currentRoom = userRooms[room];
+      for (const roomUser in currentRoom.users) {
+        const currentRoomUser = currentRoom.users[roomUser];
+        if (currentRoomUser.uid === target_uid) {
+          return currentRoom;
+        }
+      }
+    }
+
+    throw new HttpException('Room does not exists', HttpStatus.NOT_FOUND);
+  }
+
+  async delChatroom(uid: string, target_uid: string) {
+    const room = await this.getChatroom(uid, target_uid);
+    await this.prisma.user.update({
+      where: {
+        uid: uid,
+      },
+      data: {
+        chatrooms: {
+          disconnect: {
+            id: room.id,
           },
         },
-      });
-      return chatrooms;
-    }
-    throw new HttpException(
-      'Internal Server Error.',
-      HttpStatus.INTERNAL_SERVER_ERROR,
-    );
-  }
-
-  getChatroom(uid: string, target: string) {
-    const user = this.userService.getUser(uid);
-  }
-
-  findOne(id: number) {
-    return `This action returns a #${id} chatroom`;
-  }
-
-  update(id: number, updateChatroomDto: UpdateChatroomDto) {
-    return `This action updates a #${id} chatroom`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} chatroom`;
+      },
+    });
+    return 'OK';
   }
 }

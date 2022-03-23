@@ -25,26 +25,60 @@ export class UserService {
   }
 
   async getUserOrCreateNew(userDto: UserDto) {
-    const user = this.prisma.user.findUnique({
+    const user = await this.prisma.user.findUnique({
       where: {
         uid: userDto.uid,
       },
     });
     if (!user) {
-      return this.create(userDto);
+      return this.prisma.user.create({
+        data: userDto,
+      });
     }
     return user;
   }
 
   async getUser(uid: string) {
-    const user = this.prisma.user.findUnique({
+    const user = await this.prisma.user.findUnique({
       where: {
         uid: uid,
       },
+      include: {
+        chatrooms: {
+          include: {
+            users: true,
+            messages: {
+              select: {
+                date_created: true,
+                text: true,
+                user: {
+                  select: {
+                    name: true,
+                  },
+                },
+              },
+              orderBy: {
+                date_created: 'asc',
+              },
+            },
+          },
+        },
+      },
     });
     if (!user) {
-      throw new HttpException("User doesn't exists", HttpStatus.NOT_FOUND);
+      throw new HttpException('User does not exists', HttpStatus.NOT_FOUND);
     }
     return user;
+  }
+
+  async delUser(uid: string) {
+    // Check if user exists
+    const user = await this.getUser(uid);
+    await this.prisma.user.delete({
+      where: {
+        id: user.id,
+      },
+    });
+    return 'OK';
   }
 }
