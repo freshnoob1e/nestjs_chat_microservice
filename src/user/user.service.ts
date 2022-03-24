@@ -53,12 +53,13 @@ export class UserService {
                 text: true,
                 user: {
                   select: {
+                    uid: true,
                     name: true,
                   },
                 },
               },
               orderBy: {
-                date_created: 'asc',
+                date_created: 'desc',
               },
             },
           },

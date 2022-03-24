@@ -2,10 +2,10 @@ import {
   Controller,
   Post,
   Body,
-  HttpStatus,
   Param,
   Get,
   Delete,
+  Headers,
 } from '@nestjs/common';
 import { ChatroomService } from './chatroom.service';
 import { CreateChatroomDto } from './dto/create-chatroom.dto';
@@ -14,9 +14,19 @@ import { CreateChatroomDto } from './dto/create-chatroom.dto';
 export class ChatroomController {
   constructor(private readonly chatroomService: ChatroomService) {}
 
+  // @Post()
+  // create(@Body() createChatroomDto: CreateChatroomDto) {
+  //   return this.chatroomService.create(createChatroomDto);
+  // }
+
   @Post()
-  create(@Body() createChatroomDto: CreateChatroomDto) {
+  create(@Body('body') createChatroomDto: CreateChatroomDto) {
     return this.chatroomService.create(createChatroomDto);
+  }
+
+  @Get('all/:user_uid/')
+  getChatrooms(@Param('user_uid') uid: string) {
+    return this.chatroomService.getChatrooms(uid);
   }
 
   @Get(':user_uid/:target_uid')

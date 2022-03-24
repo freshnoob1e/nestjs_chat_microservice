@@ -121,4 +121,10 @@ export class ChatroomService {
     });
     return 'OK';
   }
+
+  async getChatrooms(uid: string) {
+    const user = await this.userService.getUser(uid);
+    const rooms = user.chatrooms;
+    return rooms;
+  }
 }

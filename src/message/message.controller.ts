@@ -18,7 +18,7 @@ export class MessageController {
   create(
     @Param('sender_uid') sender_uid: string,
     @Param('target_uid') target_uid: string,
-    @Body() createMessageDto: MessageDto,
+    @Body('body') createMessageDto: MessageDto,
   ) {
     return this.messageService.create(sender_uid, target_uid, createMessageDto);
   }
