@@ -20,6 +20,7 @@ If it does not have a password:
 
 **mysql://_{username}_@_{database-host}_:_{database-port}_/_{database-name}_**
 
+**_Replace values in curly bracket and remove curly bracket_**
 ## Running the app
 Open a terminal and go to this repo directory and run:
 
